@@ -186,7 +186,8 @@
 
 <div class="bar">
   <div class="wrap">
-    <button class="primary" id="copy">Copy report</button>
+    <button class="primary" id="share">Share</button>
+    <button id="copy">Copy</button>
     <button id="reset">Reset</button>
   </div>
 </div>
@@ -410,12 +411,26 @@ $("#date").addEventListener("change", e => load(e.target.value));
 $("#start").addEventListener("input", e => { state.start = e.target.value; save(); });
 $("#end").addEventListener("input",   e => { state.end   = e.target.value; save(); });
 $("#note").addEventListener("input",  e => { state.note  = e.target.value; save(); });
+async function shareReport(){
+  const text = buildReport();
+  if (!navigator.share){ copyReport(); return; }
+  try {
+    await navigator.share({ title: "Workout " + fmtDate($("#date").value), text });
+  } catch(e){
+    if (e && e.name === "AbortError") return;   // user closed the sheet
+    copyReport();
+  }
+}
+
+$("#share").addEventListener("click", shareReport);
 $("#copy").addEventListener("click", copyReport);
 $("#reset").addEventListener("click", () => {
   if (!confirm("Clear everything for this day?")) return;
   state = { done:{}, vals:{}, note:"", start:"", end:"" };
   save(); render();
 });
+
+if (!navigator.share) $("#share").textContent = "Copy report";
 
 load($("#date").value);
 </script>
