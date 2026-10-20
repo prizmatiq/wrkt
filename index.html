@@ -60,7 +60,7 @@
   }
 
   .row{
-    display:flex;align-items:center;gap:9px;
+    display:flex;align-items:center;gap:9px;flex-wrap:wrap;row-gap:7px;
     background:var(--surface);
     border:1px solid var(--line);
     border-radius:var(--radius);
@@ -69,7 +69,7 @@
   }
   .row.done{border-color:var(--accent);background:var(--accent-dim)}
 
-  .hit{display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer;user-select:none;padding:3px 0}
+  .hit{display:flex;align-items:center;gap:9px;flex:1 1 130px;min-width:0;cursor:pointer;user-select:none;padding:3px 0}
   .box{
     width:22px;height:22px;flex:0 0 22px;border-radius:7px;
     border:1.5px solid var(--line);background:var(--surface-2);
@@ -80,7 +80,7 @@
   .row.done .box svg{opacity:1}
   .name{font-size:14.5px;line-height:1.25;min-width:0;overflow-wrap:break-word}
 
-  .fields{display:flex;gap:5px;flex:0 0 auto}
+  .fields{display:flex;gap:5px;flex:0 0 auto;align-items:center;margin-left:auto}
   .fw{position:relative;flex:0 0 auto}
   .fw input{
     width:100%;background:var(--surface-2);color:var(--text);
@@ -94,6 +94,15 @@
     font-size:11px;color:var(--muted);text-decoration:none;
     pointer-events:none;letter-spacing:.01em;
   }
+  .step{
+    display:grid;place-items:center;
+    width:30px;height:36px;flex:0 0 30px;
+    background:var(--surface-2);color:var(--text);
+    border:1px solid var(--line);border-radius:9px;
+    font-size:19px;line-height:1;font-weight:500;
+    cursor:pointer;user-select:none;padding:0;
+  }
+  .step:active{background:var(--accent);border-color:var(--accent);color:var(--bg)}
 
   .time{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -207,7 +216,7 @@ const GROUPS = [
   { title:"Group C — Floor / Pelvis", items:[
     { id:"c1", name:"Hip Lift (reverse tabletop)", fields:[["reps","reps"]] },
     { id:"c2", name:"Cobra Pose",                  fields:[["reps","reps"]] },
-    { id:"c3", name:"Child Pose",                  fields:[["reps","reps"]] },
+    { id:"c3", name:"Child Pose",                  fields:[["sec","sec"]] },
     { id:"c4", name:"Cobra with Knees Bent",       fields:[["reps","reps"]] },
   ]},
   { title:"Group D — Stretching / Breathing", items:[
@@ -223,6 +232,9 @@ const GROUPS = [
     { id:"e5", name:"Dance",            fields:[["min","min"]] },
   ]},
 ];
+
+// Шаг кнопок +/-. Поля Bike (km, min, kcal) шага не имеют — только ручной ввод.
+const STEP = { reps: 1, sec: 5 };
 
 const ALL = GROUPS.flatMap(g => g.items);
 const KEY = d => "wlog:" + d;
@@ -277,6 +289,7 @@ function render(){
       fw.className = "fields";
       for (const [fid, unit] of it.fields){
         const key = it.id + "." + fid;
+        const step = STEP[fid] || 0;          // 0 = no +/- buttons (Bike)
 
         const cell = document.createElement("div");
         cell.className = "fw";
@@ -288,22 +301,52 @@ function render(){
         inp.autocomplete = "off";
         inp.style.paddingRight = (unit.length * 6 + 12) + "px";
         inp.value = state.vals[key] ?? "";
+
+        function commit(v, rerender){
+          state.vals[key] = v;
+          if (v !== "" && !state.done[it.id]){
+            state.done[it.id] = true; save(); render(); return;
+          }
+          save();
+          if (rerender) inp.value = v;
+          updateMeter();
+        }
+
         inp.addEventListener("input", () => {
           const clean = inp.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1");
           if (clean !== inp.value) inp.value = clean;
-          state.vals[key] = clean;
-          if (clean !== "" && !state.done[it.id]){
-            state.done[it.id] = true; save(); render(); return;
-          }
-          save(); updateMeter();
+          commit(clean, false);
         });
 
         const u = document.createElement("u");
         u.textContent = unit;
-
         cell.appendChild(inp);
         cell.appendChild(u);
-        fw.appendChild(cell);
+
+        if (step){
+          const minus = document.createElement("button");
+          minus.className = "step";
+          minus.textContent = "−";
+          minus.addEventListener("click", () => {
+            const cur = parseFloat(state.vals[key]) || 0;
+            const next = Math.max(0, Math.round((cur - step) * 100) / 100);
+            commit(next === 0 ? "" : String(next), true);
+          });
+
+          const plus = document.createElement("button");
+          plus.className = "step";
+          plus.textContent = "+";
+          plus.addEventListener("click", () => {
+            const cur = parseFloat(state.vals[key]) || 0;
+            commit(String(Math.round((cur + step) * 100) / 100), true);
+          });
+
+          fw.appendChild(minus);
+          fw.appendChild(cell);
+          fw.appendChild(plus);
+        } else {
+          fw.appendChild(cell);
+        }
       }
       row.appendChild(fw);
       list.appendChild(row);
