@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111214">
+<title>Workout Log</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✓</text></svg>">
+<style>
+  :root{
+    --bg:#111214;
+    --surface:#191b1e;
+    --surface-2:#212428;
+    --line:#2c3035;
+    --text:#e8e9ea;
+    --muted:#8b9196;
+    --accent:#6ee7a8;
+    --accent-dim:#1d3d2e;
+    --danger:#f08a7a;
+    --radius:13px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f4f5f6;
+      --surface:#ffffff;
+      --surface-2:#f0f1f3;
+      --line:#dfe2e5;
+      --text:#17191b;
+      --muted:#6b7378;
+      --accent:#1a9b5e;
+      --accent-dim:#dff3e7;
+      --danger:#c0432c;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:0 0 108px;
+  }
+  .wrap{max-width:600px;margin:0 auto;padding:0 12px}
+
+  header{
+    position:sticky;top:0;z-index:10;
+    background:var(--bg);
+    padding:14px 0 10px;
+    border-bottom:1px solid var(--line);
+  }
+  .hrow{display:flex;align-items:center;gap:10px}
+  h1{font-size:17px;margin:0;font-weight:650;letter-spacing:-.01em;flex:1}
+  input[type="date"]{
+    background:var(--surface-2);color:var(--text);
+    border:1px solid var(--line);border-radius:9px;
+    padding:6px 8px;font-size:14px;font-family:inherit;
+  }
+  .meter{margin-top:9px;height:4px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+  .meter i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .25s ease}
+  .count{margin-top:6px;font-size:12.5px;color:var(--muted)}
+
+  h2{
+    font-size:11px;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--muted);margin:20px 0 7px;font-weight:650;
+  }
+
+  .row{
+    display:flex;align-items:center;gap:9px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:9px 10px;margin-bottom:6px;
+    transition:border-color .15s,background .15s;
+  }
+  .row.done{border-color:var(--accent);background:var(--accent-dim)}
+
+  .hit{display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer;user-select:none;padding:3px 0}
+  .box{
+    width:22px;height:22px;flex:0 0 22px;border-radius:7px;
+    border:1.5px solid var(--line);background:var(--surface-2);
+    display:grid;place-items:center;transition:all .15s;
+  }
+  .row.done .box{background:var(--accent);border-color:var(--accent)}
+  .box svg{width:12px;height:12px;opacity:0;stroke:var(--bg);stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .row.done .box svg{opacity:1}
+  .name{font-size:14.5px;line-height:1.25;min-width:0;overflow-wrap:break-word}
+
+  .fields{display:flex;gap:5px;flex:0 0 auto}
+  .fw{position:relative;flex:0 0 auto}
+  .fw input{
+    width:100%;background:var(--surface-2);color:var(--text);
+    border:1px solid var(--line);border-radius:9px;
+    padding:9px 4px 9px 8px;font-size:14px;font-family:inherit;text-align:left;
+    min-width:0;
+  }
+  .fw input:focus{outline:none;border-color:var(--accent)}
+  .fw u{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    font-size:11px;color:var(--muted);text-decoration:none;
+    pointer-events:none;letter-spacing:.01em;
+  }
+
+  .time{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:11px 12px;margin-bottom:6px;
+  }
+  .time span{font-size:14.5px;color:var(--muted)}
+  .time input{
+    background:var(--surface-2);color:var(--text);
+    border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;font-size:15px;font-family:inherit;
+  }
+  .time input:focus{outline:none;border-color:var(--accent)}
+
+  textarea{
+    width:100%;background:var(--surface);color:var(--text);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px;font:15px/1.45 inherit;resize:vertical;min-height:70px;
+  }
+  textarea::placeholder{color:var(--muted)}
+  textarea:focus{outline:none;border-color:var(--accent)}
+
+  .bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    background:color-mix(in srgb,var(--bg) 92%,transparent);
+    backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);
+    padding:11px 12px calc(11px + env(safe-area-inset-bottom));
+  }
+  .bar .wrap{display:flex;gap:9px;padding:0}
+  button{
+    font:600 15px inherit;font-family:inherit;
+    border-radius:11px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);
+    padding:13px 16px;cursor:pointer;
+  }
+  button.primary{flex:1;background:var(--accent);border-color:var(--accent);color:var(--bg)}
+  button:active{transform:scale(.985)}
+  #reset{color:var(--danger)}
+
+  .toast{
+    position:fixed;bottom:86px;left:50%;transform:translateX(-50%) translateY(14px);
+    background:var(--text);color:var(--bg);
+    padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;
+    opacity:0;pointer-events:none;transition:all .22s ease;z-index:30;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:370px){
+    .name{font-size:13.5px}
+    .fields{gap:4px}
+    .fw input{font-size:13.5px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="hrow">
+      <h1>Workout Log</h1>
+      <input type="date" id="date">
+    </div>
+    <div class="meter"><i id="meterFill"></i></div>
+    <div class="count" id="count">0 / 0</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="time">
+    <span>Session start</span>
+    <input type="time" id="start">
+  </div>
+
+  <div id="list"></div>
+
+  <div class="time">
+    <span>Session end</span>
+    <input type="time" id="end">
+  </div>
+
+  <h2>Notes</h2>
+  <textarea id="note" placeholder="How it felt, exercise order, anything that got in the way…"></textarea>
+</main>
+
+<div class="bar">
+  <div class="wrap">
+    <button class="primary" id="copy">Copy report</button>
+    <button id="reset">Reset</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GROUPS = [
+  { title:"Group A — Wall", items:[
+    { id:"a1", name:"Wall Thoracic Extension",  fields:[["sec","sec"]] },
+    { id:"a2", name:"Wall Angels",              fields:[["sec","sec"]] },
+    { id:"a3", name:"Scapular Push-Ups (wall)", fields:[["sec","sec"]] },
+    { id:"a4", name:"Chest Extension (band)",   fields:[["reps","reps"]] },
+  ]},
+  { title:"Group B — Band", items:[
+    { id:"b1", name:"Band Shoulder Dislocates", fields:[["sec","sec"],["reps","reps"]] },
+    { id:"b2", name:"Overhead Band Press",      fields:[["sec","sec"],["reps","reps"]] },
+    { id:"b3", name:"Band Neck Extension",      fields:[["reps","reps"]] },
+    { id:"b4", name:"Floor Chest Extension",    fields:[["reps","reps"]] },
+  ]},
+  { title:"Group C — Floor / Pelvis", items:[
+    { id:"c1", name:"Hip Lift (reverse tabletop)", fields:[["reps","reps"]] },
+    { id:"c2", name:"Cobra Pose",                  fields:[["reps","reps"]] },
+    { id:"c3", name:"Child Pose",                  fields:[["reps","reps"]] },
+    { id:"c4", name:"Cobra with Knees Bent",       fields:[["reps","reps"]] },
+  ]},
+  { title:"Group D — Stretching / Breathing", items:[
+    { id:"d1", name:"Butterfly Stretch",             fields:[["sec","sec"]] },
+    { id:"d2", name:"Seated Straddle Forward Fold",  fields:[["sec","sec"]] },
+    { id:"d3", name:"Diaphragmatic Breathing 90/90", fields:[["sec","sec"]] },
+  ]},
+  { title:"Group E — Strength / Cardio", items:[
+    { id:"e1", name:"Push-Ups",         fields:[["reps","reps"]] },
+    { id:"e2", name:"Bench Dips",       fields:[["reps","reps"]] },
+    { id:"e3", name:"Step Ups (chair)", fields:[["reps","reps"]] },
+    { id:"e4", name:"Bike",             fields:[["min","min"],["km","km"],["kcal","kcal"]] },
+    { id:"e5", name:"Dance",            fields:[["min","min"]] },
+  ]},
+];
+
+const ALL = GROUPS.flatMap(g => g.items);
+const KEY = d => "wlog:" + d;
+const $ = s => document.querySelector(s);
+
+let state = {};
+
+function todayISO(){
+  const n = new Date();
+  return new Date(n.getTime() - n.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+
+function load(d){
+  let raw = null;
+  try { raw = localStorage.getItem(KEY(d)); } catch(e){}
+  state = raw ? JSON.parse(raw) : {};
+  state.done  = state.done  || {};
+  state.vals  = state.vals  || {};
+  state.note  = state.note  || "";
+  state.start = state.start || "";
+  state.end   = state.end   || "";
+  render();
+}
+
+function save(){
+  try { localStorage.setItem(KEY($("#date").value), JSON.stringify(state)); } catch(e){}
+}
+
+function render(){
+  const list = $("#list");
+  list.innerHTML = "";
+  for (const g of GROUPS){
+    const h = document.createElement("h2");
+    h.textContent = g.title;
+    list.appendChild(h);
+    for (const it of g.items){
+      const row = document.createElement("div");
+      row.className = "row" + (state.done[it.id] ? " done" : "");
+
+      const hit = document.createElement("div");
+      hit.className = "hit";
+      hit.innerHTML = '<div class="box"><svg viewBox="0 0 24 24"><polyline points="4,12.5 9.5,18 20,6.5"/></svg></div>'
+                    + '<div class="name"></div>';
+      hit.querySelector(".name").textContent = it.name;
+      hit.addEventListener("click", () => {
+        state.done[it.id] = !state.done[it.id];
+        save(); render();
+      });
+      row.appendChild(hit);
+
+      const fw = document.createElement("div");
+      fw.className = "fields";
+      for (const [fid, unit] of it.fields){
+        const key = it.id + "." + fid;
+
+        const cell = document.createElement("div");
+        cell.className = "fw";
+        cell.style.width = (46 + unit.length * 6) + "px";
+
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.inputMode = "decimal";
+        inp.autocomplete = "off";
+        inp.style.paddingRight = (unit.length * 6 + 12) + "px";
+        inp.value = state.vals[key] ?? "";
+        inp.addEventListener("input", () => {
+          const clean = inp.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1");
+          if (clean !== inp.value) inp.value = clean;
+          state.vals[key] = clean;
+          if (clean !== "" && !state.done[it.id]){
+            state.done[it.id] = true; save(); render(); return;
+          }
+          save(); updateMeter();
+        });
+
+        const u = document.createElement("u");
+        u.textContent = unit;
+
+        cell.appendChild(inp);
+        cell.appendChild(u);
+        fw.appendChild(cell);
+      }
+      row.appendChild(fw);
+      list.appendChild(row);
+    }
+  }
+  $("#note").value  = state.note;
+  $("#start").value = state.start;
+  $("#end").value   = state.end;
+  updateMeter();
+}
+
+function updateMeter(){
+  const n = ALL.filter(i => state.done[i.id]).length;
+  $("#count").textContent = n + " / " + ALL.length;
+  $("#meterFill").style.width = (n / ALL.length * 100) + "%";
+}
+
+function fmtDate(iso){
+  const [y,m,d] = iso.split("-");
+  return d + "." + m + "." + y;
+}
+
+function duration(a, b){
+  if (!a || !b) return null;
+  const [h1,m1] = a.split(":").map(Number);
+  const [h2,m2] = b.split(":").map(Number);
+  let mins = (h2*60 + m2) - (h1*60 + m1);
+  if (mins < 0) mins += 24*60;
+  return mins;
+}
+
+function buildReport(){
+  const lines = ["Workout " + fmtDate($("#date").value)];
+
+  const s = state.start, e = state.end;
+  if (s || e){
+    const dur = duration(s, e);
+    let t = "Session " + (s || "?") + " – " + (e || "?");
+    if (dur !== null) t += " (" + dur + " min)";
+    lines.push(t);
+  }
+  lines.push("");
+
+  let anyDone = false;
+  const skipped = [];
+
+  for (const g of GROUPS){
+    const rows = [];
+    for (const it of g.items){
+      if (!state.done[it.id]){ skipped.push(it.name); continue; }
+      anyDone = true;
+      const parts = it.fields
+        .map(([fid, unit]) => {
+          const v = state.vals[it.id + "." + fid];
+          return (v !== undefined && v !== "") ? v + " " + unit : null;
+        })
+        .filter(Boolean);
+      rows.push("- " + it.name + (parts.length ? " — " + parts.join(" / ") : ""));
+    }
+    if (rows.length){
+      lines.push(g.title, ...rows, "");
+    }
+  }
+
+  if (!anyDone) lines.push("Nothing checked.", "");
+  if (skipped.length) lines.push("Skipped: " + skipped.join(", "), "");
+
+  const note = ($("#note").value || "").trim();
+  if (note) lines.push("Notes: " + note);
+
+  return lines.join("\n").trim();
+}
+
+function toast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove("show"), 1900);
+}
+
+async function copyReport(){
+  const text = buildReport();
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Copied");
+    return;
+  } catch(e){}
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+  document.body.appendChild(ta);
+  ta.focus(); ta.select(); ta.setSelectionRange(0, 999999);
+  try { document.execCommand("copy"); toast("Copied"); }
+  catch(e){ toast("Select the text manually"); }
+  document.body.removeChild(ta);
+}
+
+$("#date").value = todayISO();
+$("#date").addEventListener("change", e => load(e.target.value));
+$("#start").addEventListener("input", e => { state.start = e.target.value; save(); });
+$("#end").addEventListener("input",   e => { state.end   = e.target.value; save(); });
+$("#note").addEventListener("input",  e => { state.note  = e.target.value; save(); });
+$("#copy").addEventListener("click", copyReport);
+$("#reset").addEventListener("click", () => {
+  if (!confirm("Clear everything for this day?")) return;
+  state = { done:{}, vals:{}, note:"", start:"", end:"" };
+  save(); render();
+});
+
+load($("#date").value);
+</script>
+</body>
+</html>
