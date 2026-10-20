@@ -1,6 +1,6 @@
 {
-  "name": "Workout Log",
-  "short_name": "Workout",
+  "name": "wrkt",
+  "short_name": "wrkt",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
